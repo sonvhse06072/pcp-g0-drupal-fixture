@@ -74,6 +74,7 @@ class ProbeContractTests(unittest.TestCase):
         for marker in (
             "RUNNER_ENVIRONMENT", "GITHUB_REPOSITORY",
             'assert sha256_file(source / "composer.lock") == LOCK_SHA256',
+            '"diff", "--name-only", "HEAD"',
             "git", "clone", "--no-local", "--no-hardlinks",
             "ddev", "list", "-j",
             "g0d02_only_direct", "g0d02_only_pcp",
