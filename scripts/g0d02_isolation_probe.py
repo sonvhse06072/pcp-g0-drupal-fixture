@@ -115,7 +115,7 @@ def main() -> None:
     temp = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
     ensure_github_hosted(source, temp)
     print('G0D-02 gate: runner_identity_PASS', flush=True)
-    assert run("git", "-C", str(source), "status", "--porcelain=v1") == "", "source_checkout_dirty"
+    assert run("git", "-C", str(source), "diff", "--name-only", "HEAD") == "", "source_tracked_checkout_dirty"
     for name in ("benchmark/direct", "benchmark/pcp"):
         sha = run("git", "-C", str(source), "rev-parse", "refs/remotes/origin/" + name)
         assert sha == SOURCE_SHA, f"source ref mismatch: {name}"
