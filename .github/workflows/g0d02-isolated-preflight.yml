@@ -1,0 +1,64 @@
+name: g0d02-isolated-preflight
+
+# Guarded G0 evidence only. No model inference, PCP Runtime, or owner workstation.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/g0d02-isolated-preflight.yml
+      - scripts/g0d02_isolation_probe.py
+      - tests/test_g0d02_isolation_probe.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: g0d02-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  hosted-two-arm-preflight:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout fixture repository, all pinned baseline refs
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify offline preflight logic (no providers or DDEV)
+        run: python3 -m unittest discover -s tests -p 'test_g0d02_isolation_probe.py' -v
+      - name: Install Node 24 for this disposable runner
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install only pinned Codex 0.160.0 in runner temp; do not authenticate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${RUNNER_ENVIRONMENT:-}" = github-hosted
+          test "${GITHUB_REPOSITORY:-}" = sonvhse06072/pcp-g0-drupal-fixture
+          npm install --prefix "$RUNNER_TEMP/g0d02-codex" --no-save --no-audit --no-fund @openai/codex@0.160.0
+          "$RUNNER_TEMP/g0d02-codex/node_modules/.bin/codex" --version
+      - name: Install DDEV 1.25.4 on disposable GitHub-hosted runner (autostart OFF)
+        uses: ddev/github-action-setup-ddev@fdf2f5c97943bae638f31df6df86f1defa6210c0
+        with:
+          autostart: 'false'
+          version: '1.25.4'
+          installScriptUrl: https://raw.githubusercontent.com/ddev/ddev/5da91aeb9ebab0b0e66171c450b72099308d332c/scripts/install_ddev.sh
+      - name: Prove two independent source checkouts, toolchains and databases
+        timeout-minutes: 19
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${RUNNER_ENVIRONMENT:-}" = github-hosted
+          env -u OPENAI_API_KEY -u CODEX_API_KEY -u GH_TOKEN -u GITHUB_TOKEN \
+            python3 scripts/g0d02_isolation_probe.py
+      - name: Save sanitized preflight-only evidence (7-day retention)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: g0d02-isolated-toolchain-preflight
+          path: ${{ runner.temp }}/g0d02-evidence/preflight.json
+          retention-days: 7
+          if-no-files-found: error
