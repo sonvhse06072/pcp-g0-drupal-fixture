@@ -90,44 +90,47 @@ def manifest(*, codex: str, ddev: str, arm_details: list[dict]) -> dict:
 
 
 def ensure_github_hosted(source: Path, temp: Path) -> None:
-    assert os.environ.get("RUNNER_ENVIRONMENT") == "github-hosted"
-    assert os.environ.get("RUNNER_OS") == "Linux"
-    assert os.environ.get("GITHUB_REPOSITORY") == REPO_NAME
-    assert os.environ.get("GITHUB_EVENT_NAME") == "pull_request"
-    assert source.is_dir() and (source / ".git").exists()
-    assert temp.is_dir() and not temp.is_symlink()
-    assert temp != source and not source.is_relative_to(temp)
-    assert "OPENAI_API_KEY" not in os.environ
-    assert "CODEX_API_KEY" not in os.environ
-    assert "GH_TOKEN" not in os.environ
-    assert "GITHUB_TOKEN" not in os.environ
+    assert os.environ.get("RUNNER_ENVIRONMENT") == "github-hosted", "runner_environment_not_hosted"
+    assert os.environ.get("RUNNER_OS") == "Linux", "runner_os_not_linux"
+    assert os.environ.get("GITHUB_REPOSITORY") == REPO_NAME, "unexpected_repository"
+    assert os.environ.get("GITHUB_EVENT_NAME") == "pull_request", "event_not_pull_request"
+    assert source.is_dir() and (source / ".git").exists(), "source_checkout_not_git"
+    assert temp.is_dir() and not temp.is_symlink(), "runner_temp_not_owned_directory"
+    assert temp != source and not source.is_relative_to(temp), "runner_temp_source_collision"
+    assert "OPENAI_API_KEY" not in os.environ, "unexpected_openai_api_key"
+    assert "CODEX_API_KEY" not in os.environ, "unexpected_codex_api_key"
+    assert "GH_TOKEN" not in os.environ, "unexpected_gh_token"
+    assert "GITHUB_TOKEN" not in os.environ, "unexpected_github_token"
 
 
 def verify_ddev_registry_empty() -> None:
     output = run("ddev", "list", "-j", timeout=30)
     records = [json.loads(row) for row in output.splitlines() if row.strip()]
     raw = [x["raw"] for x in records if isinstance(x, dict) and isinstance(x.get("raw"), list)]
-    assert len(raw) == 1 and raw[0] == [], "DDEV registry must be empty before probe"
+    assert len(raw) == 1 and raw[0] == [], f"DDEV registry not empty/unsupported: envelopes={len(raw)} items={sum(map(len, raw))}"
 
 
 def main() -> None:
     source = Path(os.environ["GITHUB_WORKSPACE"]).resolve(strict=True)
     temp = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
     ensure_github_hosted(source, temp)
-    assert run("git", "-C", str(source), "status", "--porcelain=v1") == ""
+    print('G0D-02 gate: runner_identity_PASS', flush=True)
+    assert run("git", "-C", str(source), "status", "--porcelain=v1") == "", "source_checkout_dirty"
     for name in ("benchmark/direct", "benchmark/pcp"):
         sha = run("git", "-C", str(source), "rev-parse", "refs/remotes/origin/" + name)
         assert sha == SOURCE_SHA, f"source ref mismatch: {name}"
-    assert sha256_file(source / "composer.lock") == LOCK_SHA256
+    assert sha256_file(source / "composer.lock") == LOCK_SHA256, "frozen_lock_checksum_mismatch"
+    print('G0D-02 gate: frozen_source_and_lock_PASS', flush=True)
 
     binary = temp / "g0d02-codex" / "node_modules/.bin/codex"
-    assert binary.is_file()
+    assert binary.is_file(), "pinned_codex_binary_missing"
     codex = run(str(binary), "--version", timeout=15)
     assert version_matches(codex, CODEX_VERSION), "isolated Codex CLI version mismatch"
     ddev = run("ddev", "--version", timeout=15)
     assert version_matches(ddev, DDEV_VERSION), "isolated DDEV version mismatch"
     ensure_github_hosted(source, temp)
     verify_ddev_registry_empty()
+    print('G0D-02 gate: pinned_codex_ddev_and_empty_registry_PASS', flush=True)
 
     details = []
     for arm, name in zip(("direct", "pcp"), PROJECT_NAMES, strict=True):
