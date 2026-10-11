@@ -26,6 +26,9 @@ final class EventLabelServiceTest extends KernelTestBase {
     $service = $this->container->get('pcp_g0_fixture.event_label_normalizer');
     self::assertInstanceOf(EventLabelNormalizer::class, $service);
     self::assertSame('Stage', $service->normalize(' Stage '));
+    self::assertSame('Jazz Band Stage', $service->normalize("Jazz\t\tBand\r\n\nStage"));
+    $label = "Jazz\u{00A0}\u{00A0}Band";
+    self::assertSame($label, $service->normalize($label));
   }
 
 }

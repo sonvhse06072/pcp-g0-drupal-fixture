@@ -22,10 +22,25 @@ final class EventLabelNormalizerTest extends UnitTestCase {
   }
 
   /**
-   * Tests surrounding whitespace without internal normalization.
+   * Tests trimming and normalization of internal ASCII whitespace.
    */
   public function testTrimsOuterWhitespace(): void {
     self::assertSame('Jazz Band', (new EventLabelNormalizer())->normalize(" \tJazz Band\n "));
+  }
+
+  /**
+   * Tests collapsing consecutive internal tabs and CR/LF characters.
+   */
+  public function testCollapsesInternalAsciiWhitespace(): void {
+    self::assertSame('Jazz Band Stage', (new EventLabelNormalizer())->normalize("Jazz\t\tBand\r\n\nStage"));
+  }
+
+  /**
+   * Tests that nonbreaking spaces are preserved.
+   */
+  public function testPreservesNonbreakingSpaces(): void {
+    $label = "Jazz\u{00A0}\u{00A0}Band";
+    self::assertSame($label, (new EventLabelNormalizer())->normalize($label));
   }
 
 }
