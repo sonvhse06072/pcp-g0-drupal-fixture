@@ -28,4 +28,20 @@ final class EventLabelServiceTest extends KernelTestBase {
     self::assertSame('Stage', $service->normalize(' Stage '));
   }
 
+  /**
+   * Tests normalization of ASCII whitespace through the registered service.
+   */
+  public function testServiceCollapsesInternalWhitespace(): void {
+    $service = $this->container->get('pcp_g0_fixture.event_label_normalizer');
+    self::assertSame('Stage Door', $service->normalize("Stage\t\tDoor\r\n"));
+  }
+
+  /**
+   * Tests that the registered service preserves nonbreaking spaces.
+   */
+  public function testServicePreservesNonbreakingSpaces(): void {
+    $service = $this->container->get('pcp_g0_fixture.event_label_normalizer');
+    self::assertSame("Stage\u{00A0}\u{00A0}Door", $service->normalize("Stage\u{00A0}\u{00A0}Door"));
+  }
+
 }

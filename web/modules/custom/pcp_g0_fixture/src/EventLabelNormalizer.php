@@ -5,16 +5,15 @@ namespace Drupal\pcp_g0_fixture;
 /**
  * Normalizes a fixture label without external dependencies.
  *
- * Internal whitespace normalization is NOT part of this initial baseline.
- * It is reserved for the later G0D-T01 benchmark task.
+ * Collapses consecutive internal ASCII whitespace into a single space.
  */
 final class EventLabelNormalizer {
 
   /**
-   * Removes surrounding ASCII whitespace without changing inner spacing.
+   * Trims surrounding whitespace and collapses internal ASCII whitespace.
    */
   public function normalize(string $label): string {
-    return trim($label);
+    return preg_replace('/[ \t\r\n]+/', ' ', trim($label));
   }
 
 }
