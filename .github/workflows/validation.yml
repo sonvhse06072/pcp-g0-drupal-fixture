@@ -2,7 +2,7 @@ name: validation
 
 on:
   pull_request:
-    branches: [main, benchmark/direct, benchmark/pcp, benchmark/595-d1-direct-v1, benchmark/595-d1-pcp-v1]
+    branches: [main, benchmark/direct, benchmark/pcp, benchmark/595-d1-direct, benchmark/595-d1-pcp]
   workflow_dispatch:
     inputs:
       candidate_sha:

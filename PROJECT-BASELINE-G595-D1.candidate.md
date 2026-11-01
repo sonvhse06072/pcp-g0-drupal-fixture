@@ -15,7 +15,7 @@ No old T01/F2/T02 task, solution or denied egress is reused. No real application
 
 ## Neutral quality policy
 
-Both future delivery bases benchmark/595-d1-direct-v1 and benchmark/595-d1-pcp-v1
+Both future delivery bases benchmark/595-d1-direct and benchmark/595-d1-pcp
 must begin at the SAME independently accepted, post-QA successor source. They are
 not created by this PR. Both arms run Composer validate, PHP syntax, Drupal PHPCS,
 and actual nonempty Drupal Unit and Kernel suites, failing skipped/incomplete/risky
