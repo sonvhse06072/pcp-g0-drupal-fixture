@@ -2,8 +2,13 @@ name: validation
 
 on:
   pull_request:
-    branches: [main, benchmark/direct, benchmark/pcp]
+    branches: [main, benchmark/direct, benchmark/pcp, benchmark/595-d1-direct, benchmark/595-d1-pcp]
   workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact repository commit to validate (40 lowercase hex)
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -13,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       database:
-        image: mariadb:10.11
+        image: mariadb:11.8
         env:
           MARIADB_DATABASE: db
           MARIADB_USER: db
@@ -27,13 +32,34 @@ jobs:
           --health-timeout=3s
           --health-retries=30
     steps:
+      - name: Validate requested exact head
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || inputs.candidate_sha || github.sha }}
+        run: |
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || inputs.candidate_sha || github.sha }}
+          persist-credentials: false
+      - name: Prove actual checkout and toolchain provenance
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || inputs.candidate_sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test "$(sha256sum composer.lock | cut -d ' ' -f1)" = 3a3d086be59571b43f05301ab099dc4d710a2ca1da0b25af60341d527f531f2b
+          git rev-parse HEAD
+          git hash-object .github/workflows/validation.yml
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: mbstring, gd, pdo_mysql, xml, dom, zip, curl
           tools: composer:v2
           coverage: none
+      - name: Record actual PHP, Composer and database versions
+        run: |
+          php --version
+          composer --version
+          php -r '$db = new PDO("mysql:host=127.0.0.1;port=3306;dbname=db", "db", "db"); echo $db->query("SELECT VERSION()")->fetchColumn(), PHP_EOL;'
       - name: Validate dependency manifest and lock
         run: composer validate --strict --no-interaction
       - name: Install locked dependencies
@@ -46,6 +72,7 @@ jobs:
           test -f composer.lock
       - name: PHP syntax
         run: |
+          test -n "$(find web/modules/custom/pcp_g0_fixture -type f -name '*.php' -print -quit)"
           find web/modules/custom/pcp_g0_fixture -type f -name '*.php' -print0 | xargs -0 -r -n1 php -l
       - name: Drupal coding standards
         run: vendor/bin/phpcs --standard=Drupal web/modules/custom/pcp_g0_fixture
@@ -56,5 +83,5 @@ jobs:
           BROWSERTEST_OUTPUT_BASE_DIRECTORY: /tmp/pcp-g0-browser
           SYMFONY_DEPRECATIONS_HELPER: disabled
         run: |
-          vendor/bin/phpunit -c web/core/phpunit.xml.dist web/modules/custom/pcp_g0_fixture/tests/src/Unit
-          vendor/bin/phpunit -c web/core/phpunit.xml.dist web/modules/custom/pcp_g0_fixture/tests/src/Kernel
+          vendor/bin/phpunit -c web/core/phpunit.xml.dist --fail-on-empty-test-suite --fail-on-skipped --fail-on-incomplete --fail-on-risky web/modules/custom/pcp_g0_fixture/tests/src/Unit
+          vendor/bin/phpunit -c web/core/phpunit.xml.dist --fail-on-empty-test-suite --fail-on-skipped --fail-on-incomplete --fail-on-risky web/modules/custom/pcp_g0_fixture/tests/src/Kernel
