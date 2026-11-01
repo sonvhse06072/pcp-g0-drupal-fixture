@@ -64,7 +64,10 @@ jobs:
           test -f composer.lock
       - name: PHP syntax
         run: |
-          find web/modules/custom/pcp_g0_fixture -type f -name '*.php' -print0 | xargs -0 -r -n1 php -l
+          php <<'PHP'
+          <?php
+          foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator('web/modules/custom/pcp_g0_fixture')) as $f)if($f->isFile()&&$f->getExtension()==='php'){$p=proc_open([PHP_BINARY,'-l',$f->getPathname()],[STDIN,STDOUT,STDERR],$x);if(!is_resource($p)||proc_close($p))exit(1);}
+          PHP
       - name: Drupal coding standards
         run: vendor/bin/phpcs --standard=Drupal web/modules/custom/pcp_g0_fixture
       - name: Drupal Unit and Kernel tests
