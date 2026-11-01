@@ -1,0 +1,21 @@
+# INERT example, not an installed per-job configuration or physical approval.
+# This filename matches DDEV config.*.yaml; keep its only effective value inert.
+override_config: false
+# Operator preparation AFTER separate physical approval must create/seal exact:
+# override_config: true
+# name: <independent-arm-job-name>
+# php_version: "8.4"
+# nodejs_version: "24"
+# database: {type: mariadb, version: "11.8"}
+# omit_containers: [ddev-ssh-agent]
+# disable_settings_management: true
+# web_environment:
+#   - SIMPLETEST_DB=mysql://db:db@db/db
+#   - SIMPLETEST_BASE_URL=http://web
+#   - SYMFONY_DEPRECATIONS_HELPER=disabled
+# Equal toolchain/cache policy for both arms; no browser/preview entitlement.
+# Separate operator-sealed Compose must bind only this workspace and private
+# per-arm cache/DB volumes; internal exact web/db network, no router/SSH peers,
+# no published ports, no host HOME/credentials/socket. Do not start from example.
+# Actual immutable IDs/images/config fingerprints and least-privilege/resources
+# must pass both private manifest readers. This example creates none of them.
