@@ -2,8 +2,13 @@ name: validation
 
 on:
   pull_request:
-    branches: [main, benchmark/direct, benchmark/pcp]
+    branches: [main, benchmark/direct, benchmark/pcp, benchmark/595-d1-direct, benchmark/595-d1-pcp]
   workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact reviewed candidate commit (40 lowercase hex characters)
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -27,7 +32,20 @@ jobs:
           --health-timeout=3s
           --health-retries=30
     steps:
+      - name: Require an exact candidate before checkout
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || inputs.candidate_sha }}
+        shell: bash
+        run: |
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || inputs.candidate_sha }}
+          persist-credentials: false
+      - name: Prove the checked-out candidate
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || inputs.candidate_sha }}
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -56,5 +74,5 @@ jobs:
           BROWSERTEST_OUTPUT_BASE_DIRECTORY: /tmp/pcp-g0-browser
           SYMFONY_DEPRECATIONS_HELPER: disabled
         run: |
-          vendor/bin/phpunit -c web/core/phpunit.xml.dist web/modules/custom/pcp_g0_fixture/tests/src/Unit
-          vendor/bin/phpunit -c web/core/phpunit.xml.dist web/modules/custom/pcp_g0_fixture/tests/src/Kernel
+          vendor/bin/phpunit --fail-on-empty-test-suite --fail-on-skipped --fail-on-incomplete -c web/core/phpunit.xml.dist web/modules/custom/pcp_g0_fixture/tests/src/Unit
+          vendor/bin/phpunit --fail-on-empty-test-suite --fail-on-skipped --fail-on-incomplete -c web/core/phpunit.xml.dist web/modules/custom/pcp_g0_fixture/tests/src/Kernel

@@ -1,0 +1,25 @@
+# INERT EXAMPLE ONLY. All content is commented deliberately: DDEV discovers
+# config.*.yaml automatically. This file must not change an existing site.
+# A separately reviewed operator deployment must create and seal the actual
+# arm-local override, private cache/data volumes, internal network and exact IDs.
+# The developer cannot edit host-interpreted .ddev or .git metadata.
+#
+# override_config: true
+# name: <separately-approved-arm-name>
+# php_version: "8.4"
+# nodejs_version: "24"
+# database:
+#   type: mariadb
+#   version: "11.8"
+# use_dns_when_possible: false
+# web_environment:
+#   - SIMPLETEST_DB=mysql://db:db@db:3306/db
+#   - SIMPLETEST_BASE_URL=http://localhost
+#   - SYMFONY_DEPRECATIONS_HELPER=disabled
+#
+# Composer.lock remains exact on both arms. Local MariaDB11.8 and hosted
+# MariaDB10.11 are distinct declared profiles, equal within each arm pair.
+# No hooks, host commands, preview/router exposure, Docker socket, provider
+# credential, foreign bind mount or shared ddev-global-cache is authorized.
+# Exact private Compose must also protect /var/www/html/.ddev and /.git as
+# read-only nested mounts and bound CPU/memory/PIDs. Nothing starts here.
