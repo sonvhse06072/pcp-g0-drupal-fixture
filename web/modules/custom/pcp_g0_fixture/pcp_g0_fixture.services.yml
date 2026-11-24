@@ -1,3 +1,6 @@
 services:
   pcp_g0_fixture.event_label_normalizer:
     class: Drupal\pcp_g0_fixture\EventLabelNormalizer
+  pcp_g0_fixture.capacity_availability:
+    class: Drupal\pcp_g0_fixture\CapacityAvailability
+    arguments: ['@config.factory']

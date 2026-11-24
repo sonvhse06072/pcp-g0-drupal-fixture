@@ -1,0 +1,7 @@
+pcp_g0_fixture.capacity:
+  type: config_object
+  label: 'Fixture capacity'
+  mapping:
+    capacity:
+      type: integer
+      label: 'Capacity'
